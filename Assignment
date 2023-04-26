@@ -158,6 +158,52 @@ Hive does not store metadata information in HDFS because HDFS is designed for st
 
 35)Data transfer from HDFS to Hive occurs through a process called data loading or ingestion. Hive provides several tools for loading
 
+38)Yes, a table can be renamed in Hive using the RENAME command as follows:
+ALTER TABLE table_name RENAME TO new_table_name;
+
+
+39)To insert a new column before an existing column in a Hive table, we can use the ALTER TABLE command along with the ADD COLUMNS clause and the BEFORE keyword to specify the position of the new column, as follows:
+ALTER TABLE table_name ADD COLUMNS (new_col INT) BEFORE x_col;
+
+
+
+40)Serde stands for Serializer/Deserializer. It is an interface in Hive that defines how data is serialized and deserialized between the Hadoop Distributed File System (HDFS) and Hive tables. Serde allows Hive to work with various data formats such as CSV, JSON, Avro, ORC, and Parquet.
+
+
+
+41)When data is read from a source file by Hive, it is deserialized using the Serde defined for that file format. The Serde converts the data from its serialized form to a structured form that can be processed by Hive. When data is written to a file by Hive, it is serialized using the same Serde to convert it back to its serialized form.
+
+
+
+
+42)The built-in Serde in Hive is called LazySimpleSerDe. It is used to read and write text-based data in delimited or fixed-width formats.
+
+
+
+
+43)Custom Serde is needed when the built-in Serde does not support the data format that we want to work with. We can write a custom Serde that can handle any data format, including non-textual data such as Avro or Protocol Buffers.
+
+
+
+
+44)The complex data types (collection data types) in Hive include arrays, maps, and structs.
+
+45)Yes, Hive queries can be executed from script files using the -f option with the hive command. For example:
+hive -f /path/to/script.hql
+
+
+
+
+46)The default record delimiter used for Hive text files is a new line character (\n), and the default field delimiter is a tab character (\t).
+
+
+
+47)To list all databases in Hive whose name starts with "s", we can use the following command:
+SHOW DATABASES LIKE 's*';
+
+
+48)The LIKE operator in Hive is used to match patterns in a string. It uses the '%' wildcard to match any number of characters. The RLIKE operator is similar to LIKE, but it uses regular expressions to match patterns in a string.
+
 54)The maximum size of a string data type supported by Hive depends on the version of Hive and the configuration settings. In Hive 3.1.0 and later versions, the default maximum size of a string data type is 1 MB, but this can be increased by changing the hive.exec.max.dynamic.partition.length and hive.exec.max.dynamic.partition.size configuration properties. In earlier versions of Hive, the maximum size of a string data type is typically limited to 64 KB.
 Hive supports binary formats by using the Binary data type. This data type is used to store binary data, such as images, videos, and compressed data. Hive also supports several file formats that can store binary data, including SequenceFile, RCFile, ORC, and Parquet.
 
@@ -173,11 +219,7 @@ In addition to these file formats, Hive also supports several applications for d
 
 
 
-
 56)ORC format tables help Hive to enhance its performance in several ways. ORC tables are optimized for reading and writing large datasets, and they can be compressed to reduce storage space and improve I/O performance. ORC tables also support advanced features such as predicate pushdown, column pruning, and vectorization, which can further improve query performance.
-
-
-
 
 
 57)Hive can avoid using MapReduce while processing a query by using several optimization techniques, including:
@@ -187,17 +229,55 @@ Column pruning: This technique eliminates unnecessary columns from the query, re
 Indexing: This technique uses indexes to quickly locate data in the table, reducing the amount of time needed for scanning the entire table.
 
 
-
-
-
 58)In Hive, a view is a virtual table that represents the result of a SELECT statement. A view does not contain any data itself but provides a convenient way to access data from one or more tables. An index in Hive is a data structure that allows for faster data retrieval by providing a quick way to look up data based on a specified column or set of columns. Indexes can be created on tables or views to improve query performance.
 
+60)Yes, the name of a view can be the same as the name of a Hive table. However, it is generally not recommended to use the same name for a table and a view, as it can lead to confusion and potential errors.
+
+74)Whenever a Hive query is run, a metastore_db is created to store metadata about the tables and partitions being queried. This metadata includes information such as the schema of the tables, the location of the data, and the data format.
+
+75)Yes, we can change the data type of a column in a Hive table using the ALTER TABLE command. Here's an example:
+ALTER TABLE mytable CHANGE COLUMN mycolumn mycolumn_newtype;
+In this example, "mytable" is the name of the table, "mycolumn" is the name of the column we want to change the data type for, and "mycolumn_newtype" is the new data type we want to use.
+
+
+76)When loading data into a Hive table using the LOAD DATA clause, we specify that it is an HDFS file by using the keyword "FROM" followed by the HDFS file path. Here's an example:
+LOAD DATA INPATH 'hdfs://mycluster/user/data/file.txt' INTO TABLE mytable;
+In this example, "mycluster" is the name of the HDFS cluster, "user/data/file.txt" is the path to the file we want to load, and "mytable" is the name of the Hive table we want to load the data into.
+
+77&Hive configuration follows a precedence order, where settings at higher levels override those at lower levels. The order is as follows:
+HiveServer2 system properties
+HiveServer2 configuration file settings
+HiveClient configuration file settings
+HiveClient command-line options
+
+
+78)The Thrift interface is used for accessing the Hive metastore. This interface provides a standardized way to access the metadata stored in the metastore, which can be used by clients written in different programming languages.
+
+79)Yes, it is possible to compress JSON data in a Hive external table. We can use the "STORED AS" clause when creating the table, and specify the compression codec we want to use. Here's an example:
+
+CREATE EXTERNAL TABLE mytable (
+  id INT,
+  json_data STRING
+)
+ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
+STORED AS TEXTFILE
+LOCATION '/path/to/table'
+TBLPROPERTIES ('compression.codec'='gzip');
+In this example, we are using the "gzip" compression codec to compress the JSON data stored in the "json_data" column.
 
 
 
+80)A local metastore is a Hive metastore that is embedded within the Hive server process, while a remote metastore is a standalone service that runs separately from the Hive server. The main difference between the two is that a local metastore is easier to set up and manage, but may not be suitable for larger-scale deployments. A remote metastore, on the other hand, provides better scalability and can be shared across multiple Hive servers.
 
-59)Yes, the name of a view can be the same as the name of a Hive table. However, it is generally not recommended to use the same name for a table and a view, as it can lead to confusion and potential errors.
+
+81)The purpose of archiving tables in Hive is to move the data associated with a table to a different location while still preserving the table's metadata. This can be useful for managing large amounts of data, as it allows us to store older or less frequently accessed data in a separate location without having to delete it entirely.
+
+82)DBPROPERTY is a Hive function that returns the value of a specified property for a given database. For example, we can use the following query to retrieve the location of a database:
+
+SELECT DBPROPERTY('mydatabase', 'location');
+In this example, "mydatabase" is the name of the database we want to retrieve the location for.
 
 
+83)Local mode in Hive refers to a mode where all data processing is done locally on the same machine as the Hive server. This is typically used for testing and development purposes, and is not suitable
 
 
