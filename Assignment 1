@@ -1,0 +1,143 @@
+tep 1: Download the Vehicle Sales Data
+
+Download the CSV file from the provided URL: sales_order_data.csv.
+
+Step 2: Store Raw Data into HDFS
+
+You can use the hadoop fs command to store the raw data in HDFS:
+
+bash
+Copy code
+hadoop fs -put /path/to/sales_order_data.csv /user/hive/warehouse/raw_data/
+Make sure to replace /path/to/sales_order_data.csv with the actual file path.
+
+Step 3: Create an Internal Hive Table "sales_order_csv"
+
+Now, create an internal Hive table that will store the CSV data. Be sure to skip the header row while creating the table.
+
+sql
+Copy code
+CREATE TABLE IF NOT EXISTS sales_order_csv (
+    col1 INT,
+    col2 STRING,
+    col3 INT,
+    col4 STRING,
+    -- Add more columns as needed
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+TBLPROPERTIES ("skip.header.line.count"="1");
+Step 4: Load Data from HDFS into "sales_order_csv"
+
+Load the data from HDFS into the Hive table:
+
+sql
+Copy code
+LOAD DATA INPATH '/user/hive/warehouse/raw_data/sales_order_data.csv' INTO TABLE sales_order_csv;
+Step 5: Create an Internal Hive Table "sales_order_orc"
+
+Now, create another internal Hive table that will store the data in ORC format:
+
+sql
+Copy code
+CREATE TABLE IF NOT EXISTS sales_order_orc (
+    col1 INT,
+    col2 STRING,
+    col3 INT,
+    col4 STRING,
+    -- Add more columns as needed
+)
+STORED AS ORC;
+Step 6: Load Data from "sales_order_csv" into "sales_order_orc"
+
+Load the data from the CSV table into the ORC table:
+
+sql
+Copy code
+INSERT OVERWRITE TABLE sales_order_orc
+SELECT * FROM sales_order_csv;
+Now that you have the data in the "sales_order_orc" table, you can perform the requested queries:
+
+a. Calculate Total Sales per Year:
+
+sql
+Copy code
+SELECT YEAR(sale_date) AS year, SUM(sales_amount) AS total_sales
+FROM sales_order_orc
+GROUP BY YEAR(sale_date);
+b. Find a Product for Which Maximum Orders Were Placed:
+
+sql
+Copy code
+SELECT product_name
+FROM (
+    SELECT product_name, ROW_NUMBER() OVER (ORDER BY order_count DESC) AS rn
+    FROM (
+        SELECT product_name, COUNT(*) AS order_count
+        FROM sales_order_orc
+        GROUP BY product_name
+    ) sub
+) ranked
+WHERE rn = 1;
+c. Calculate Total Sales for Each Quarter:
+
+sql
+Copy code
+SELECT
+    CONCAT(YEAR(sale_date), ' Q', QUARTER(sale_date)) AS quarter,
+    SUM(sales_amount) AS total_sales
+FROM sales_order_orc
+GROUP BY YEAR(sale_date), QUARTER(sale_date)
+ORDER BY year, quarter;
+d. In Which Quarter Sales Was Minimum:
+
+sql
+Copy code
+SELECT
+    CONCAT(YEAR(sale_date), ' Q', QUARTER(sale_date)) AS quarter,
+    SUM(sales_amount) AS total_sales
+FROM sales_order_orc
+GROUP BY YEAR(sale_date), QUARTER(sale_date)
+ORDER BY total_sales
+LIMIT 1;
+e. In Which Country Sales Was Maximum and in Which Country Sales Was Minimum:
+
+You'll need to adapt this query based on the actual columns in your data that represent country information.
+
+f. Calculate Quarterly Sales for Each City:
+
+sql
+Copy code
+SELECT
+    city,
+    CONCAT(YEAR(sale_date), ' Q', QUARTER(sale_date)) AS quarter,
+    SUM(sales_amount) AS total_sales
+FROM sales_order_orc
+GROUP BY city, YEAR(sale_date), QUARTER(sale_date)
+ORDER BY city, year, quarter;
+g. Find a Month for Each Year in Which Maximum Number of Quantities Were Sold:
+
+sql
+Copy code
+WITH MonthlySales AS (
+    SELECT
+        YEAR(sale_date) AS year,
+        MONTH(sale_date) AS month,
+        SUM(quantity_sold) AS total_quantity
+    FROM sales_order_orc
+    GROUP BY YEAR(sale_date), MONTH(sale_date)
+)
+SELECT
+    year,
+    month,
+    total_quantity
+FROM (
+    SELECT
+        year,
+        month,
+        total_quantity,
+        ROW_NUMBER() OVER (PARTITION BY year ORDER BY total_quantity DESC) AS rn
+    FROM MonthlySales
+) ranked
+WHERE rn = 1;
